@@ -130,11 +130,16 @@ searchingResult_t<T> paramSearch(const T& begin, const T& end, U (*func)(T x), c
     while (left < right) {
         T currentParam = (left + right) / 2;
 
+        // Even with -O3 saves up operations
+        // Turns out, compiler won't optimize and save result of `func(currentParam)` into
+        // temp variable as `func` may change global state and thus provide different result
+        U currentParamValue = func(currentParam);
+
         // maybe theese if-branches are not pretty, but I've tried to make this
         // function work when only operator< and operator== are defined.
-        if (func(currentParam) < value) {
+        if (currentParamValue < value) {
             left = currentParam + 1;
-        } else if (func(currentParam) == value) {
+        } else if (currentParamValue == value) {
             // Some entrance of element is found
 
             switch(priority) {
