@@ -9,6 +9,7 @@
 
 ### Алгоритмы
 - [Скользящее окно](https://github.com/DungyBug/algobox/blob/master/sliding%20window/sliding-window.md)
+- [Двоичный поиск](https://github.com/DungyBug/algobox/blob/master/binsearch/binsearch.md)
 
 ### Структуры данных
 - [Дерево отрезков](https://github.com/DungyBug/algobox/blob/master/segtree/segtree.md)
