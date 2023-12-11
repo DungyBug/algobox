@@ -34,6 +34,23 @@ struct segtree_t {
             this->segments[i + size - 1] = array[i];
         }
 
+        this->updateSegments();
+    }
+
+    /**
+     * Changes value without updating segments. Helpful for filling segtree
+     * without arrays.
+     * You need to call `updateSegments` before calling `operate`
+    */
+    void setValueWithoutUpdate(uint32_t index, T value) {
+        this->segments[index + this->size - 1] = value;
+    }
+
+    /**
+     * Updates segments, so you can use `operate`.
+     * Call this before `operate` if you'd used `setValueWithoutUpdate`
+    */
+    void updateSegments() {
         for(int32_t i = size - 2; i >= 0; i--) {
             this->operation_func(this->segments[i], this->segments[i * 2 + 1], this->segments[i * 2 + 2]);
         }
@@ -58,15 +75,21 @@ struct segtree_t {
     /**
      * Gets result for operation at range [l; r) ( including l and excluding r )
      * Has logarithmic complexity
+     * @param l - left boundary ( inclusive )
+     * @param r - right boundary ( exclusive )
+     * @param initialValue - should be used, when segtree operates complex types,
+     *                       such as structs and classes, which cannot be left
+     *                       unitialized. On first call of `operation_func` this
+     *                       `initialValue` is passed as second argument.
     */
-    T operate(int32_t l, int32_t r) {
+    T operate(int32_t l, int32_t r, T initialValue = 0) {
         // Segments are organised specific way, where last segments
         // represent individual elements ( i.e. they have length 1 ).
         // In the algorithm we need to start from them
         l += this->size - 1;
         r += this->size - 1;
 
-        T result = 0;
+        T result = initialValue;
 
         while(l < r) {
             if(l % 2 == 0) {

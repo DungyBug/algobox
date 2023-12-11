@@ -90,10 +90,25 @@ for(uint64_t &value : values) {
 stree.fillup(values.data());
 ```
 
+или `setValueWithoutUpdate`:
+
+```cpp
+for(uint32_t i = 0; i < 256; i++) {
+    // setValueWithoutUpdate не обновляет диапазоны, поэтому отрабатывает быстрее
+    stree.setValueWithoutUpdate(i, rand());
+}
+
+// Однако после вызова setValueWithoutUpdate() нужно вызывать updateSegments(),
+// чтобы можно было спокойно использовать operate()
+stree.updateSegments();
+```
+
 Ну и теперь, чтобы посчитать сумму на подотрезке, нам нужно вызвать метод `operate`:
 
 ```cpp
-std::cout << stree.operate(13, 44) << std::endl;
+// Посчитает сумму в диапазоне [13; 44)
+// Последний аргумент - это начальное значение ( в данном случае он не обязателен )
+std::cout << stree.operate(13, 44, 0) << std::endl;
 ```
 
 Чтобы изменить элемент, можно воспользоваться методом `setValue`.
