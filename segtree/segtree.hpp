@@ -59,7 +59,7 @@ struct segtree_t {
      * Gets result for operation at range [l; r) ( including l and excluding r )
      * Has logarithmic complexity
     */
-    uint64_t operate(int32_t l, int32_t r) {
+    T operate(int32_t l, int32_t r) {
         // Segments are organised specific way, where last segments
         // represent individual elements ( i.e. they have length 1 ).
         // In the algorithm we need to start from them
