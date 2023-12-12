@@ -82,7 +82,7 @@ struct segtree_t {
      *                       unitialized. On first call of `operation_func` this
      *                       `initialValue` is passed as second argument.
     */
-    T operate(int32_t l, int32_t r, T initialValue = 0) {
+    T operate(int32_t l, int32_t r, T initialValue = 0) const {
         // Segments are organised specific way, where last segments
         // represent individual elements ( i.e. they have length 1 ).
         // In the algorithm we need to start from them

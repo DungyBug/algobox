@@ -1,5 +1,6 @@
 #ifndef BINSEARCH_HPP
 #define BINSEARCH_HPP
+#include <functional>
 #include <stdint.h>
 #include "../constants/search_priority.hpp"
 
@@ -122,7 +123,7 @@ int64_t search(const T* begin, const T* end, const U& value, searchPriority prio
  *          With RIGHT_ENTRANCE returns biggest parameter, which produces desired value.
 */
 template <typename T, typename U>
-searchingResult_t<T> paramSearch(const T& begin, const T& end, U (*func)(T x), const U& value, searchPriority priority = searchPriority::ANY_ENTRANCE) {
+searchingResult_t<T> paramSearch(const T& begin, const T& end, std::function<U(T x)> func, const U& value, searchPriority priority = searchPriority::ANY_ENTRANCE) {
     // range is represented as [left; right) ( including left and excluding right )
     T left = begin;
     T right = end;

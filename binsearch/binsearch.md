@@ -96,13 +96,14 @@ int32_t linearSearch(const std::vector<T> &array, const T& searchingValue) {
 
 ```cpp
 #include <iostream>
+#include <functional>
 #include <stdint.h>
 
 uint32_t square(uint32_t x) {
     return x * x;
 }
 
-auto result = paramSearch(0u, 20000000u, square, 18344089u);
+auto result = paramSearch(0u, 20000000u, std::function(square), 18344089u);
 
 std::cout << result.result << std::endl; // 4283
 ```
