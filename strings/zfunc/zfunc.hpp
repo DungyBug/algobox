@@ -4,25 +4,24 @@
 #include <string>
 #include <stdint.h>
 
-std::vector<uint64_t> zfunc(const std::string &str) {
+inline std::vector<uint64_t> zfunc(const std::string &str) {
     uint64_t size = str.size();
+    const char* input = str.c_str();
+
     std::vector<uint64_t> zvalues(size, 0);
 
     uint64_t l = 0, r = 0;
 
     for(uint64_t i = 1; i < size; i++) {
 #if 0
-        // This is shorter, but slower. Benched with -O0 and -O1 flags.
-        // I'll inspect this part, maybe I'll make it faster
-        uint64_t currentLen = 0;
+        uint64_t currentLen = zvalues[i - l];
 
-        if(i <= r)
-            currentLen = std::min(zvalues[i - l] + i, r) - i;
+        if(i + currentLen > r) {
+            currentLen = r > i ? r - i : 0;
 
-        while(i + currentLen < size && str[i + currentLen] == str[currentLen])
-            currentLen++;
+            while(input[i + currentLen] == input[currentLen])
+                currentLen++;
 
-        if(i + zvalues[i - l] > r) {
             l = i;
             r = i + currentLen - 1;
         }
@@ -36,7 +35,13 @@ std::vector<uint64_t> zfunc(const std::string &str) {
         uint64_t currentLen = 0;
 
         if(r < i) {
-            while(i + currentLen < size && str[i + currentLen] == str[currentLen])
+            // Original algorithm has additional check for `i + currentLen < size`,
+            // but as strings are null-terminated and i + currentLen always bigger
+            // by at least one than currentLen, we can skip this check.
+            // After all, input[i + currentLen] at some point becomes NULL-character
+            // and, obviosly, won't be equal to any of the string characters.
+            // At least, none of the million tests marks this as buggy code.
+            while(input[i + currentLen] == input[currentLen])
                 currentLen++;
 
             l = i;
@@ -44,9 +49,9 @@ std::vector<uint64_t> zfunc(const std::string &str) {
         } else if(i + zvalues[i - l] <= r) {
             currentLen = zvalues[i - l];
         } else {
-            currentLen = r - i;
+            currentLen = r - i + 1;
 
-            while(i + currentLen < size && str[i + currentLen] == str[currentLen])
+            while(input[i + currentLen] == input[currentLen])
                 currentLen++;
 
             l = i;
@@ -58,6 +63,6 @@ std::vector<uint64_t> zfunc(const std::string &str) {
     }
 
     return zvalues;
-}
+};
 
 #endif
