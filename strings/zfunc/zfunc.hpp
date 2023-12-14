@@ -6,17 +6,25 @@
 
 inline std::vector<uint64_t> zfunc(const std::string &str) {
     uint64_t size = str.size();
-    const char* input = str.c_str();
+
+    // Comparing values of c-array is faster than doing the same
+    // thing but with abstraction layer like std::string
+    const char* const input = str.c_str();
 
     std::vector<uint64_t> zvalues(size, 0);
+
+    // The same optimization
+    uint64_t *rawZValues = zvalues.data();
 
     uint64_t l = 0, r = 0;
 
     for(uint64_t i = 1; i < size; i++) {
 #if 0
-        uint64_t currentLen = zvalues[i - l];
+        // This is shorter, but slower with -O0, -O1 and -O3 flags. Shows better
+        // results only with -O2.
+        uint64_t currentLen = 0;
 
-        if(i + currentLen > r) {
+        if(i > r || i + rawZValues[i - l] > r) {
             currentLen = r > i ? r - i : 0;
 
             while(input[i + currentLen] == input[currentLen])
@@ -24,14 +32,16 @@ inline std::vector<uint64_t> zfunc(const std::string &str) {
 
             l = i;
             r = i + currentLen - 1;
+        } else {
+            rawZValues[i] = rawZValues[i - l];
+            continue;
         }
 
-        zvalues[i] = currentLen;
+        rawZValues[i] = currentLen;
 #else
         // Making temp variable instead of modifying zvalues[i] directly
-        // significantly increases perfomance, making zfunc ~40% faster
-        // with -O0 flag.
-        // Honestly, I don't know why does compiler don't do it for me...
+        // significantly increases perfomance, making zfunc ~30% faster
+        // with -O1 flag.
         uint64_t currentLen = 0;
 
         if(r < i) {
@@ -46,8 +56,8 @@ inline std::vector<uint64_t> zfunc(const std::string &str) {
 
             l = i;
             r = i + currentLen - 1;
-        } else if(i + zvalues[i - l] <= r) {
-            currentLen = zvalues[i - l];
+        } else if(i + rawZValues[i - l] <= r) {
+            currentLen = rawZValues[i - l];
         } else {
             currentLen = r - i + 1;
 
@@ -58,7 +68,7 @@ inline std::vector<uint64_t> zfunc(const std::string &str) {
             r = i + currentLen - 1;
         }
 
-        zvalues[i] = currentLen;
+        rawZValues[i] = currentLen;
 #endif
     }
 
