@@ -16,7 +16,7 @@ struct element_t {
 };
 
 template <uint32_t N>
-constexpr inline uint64_t getKeyFrom(uint8_t *bytes) {
+constexpr inline uint64_t getKeyFrom(const uint8_t *bytes) {
     uint64_t key = 0;
 
     for(uint64_t i = N; i > 0; i--) {
@@ -109,23 +109,21 @@ void radixSort(T* begin, T* end, T* out, const U &keyFunc, bool freeKeys = false
             element_t<T>& element1 = elements[i - 2];
             element_t<T>& element0 = elements[i - 1];
 
-            uint64_t idx3 = getKeyFrom<BYTES>(element3.key + key);
-            uint64_t idx2 = getKeyFrom<BYTES>(element2.key + key);
-            uint64_t idx1 = getKeyFrom<BYTES>(element1.key + key);
-            uint64_t idx0 = getKeyFrom<BYTES>(element0.key + key);
+            const uint64_t idx3 = getKeyFrom<BYTES>(element3.key + key);
+            const uint64_t idx2 = getKeyFrom<BYTES>(element2.key + key);
+            const uint64_t idx1 = getKeyFrom<BYTES>(element1.key + key);
+            const uint64_t idx0 = getKeyFrom<BYTES>(element0.key + key);
 
             // Decrement first to get indexes which start from zero
-            counts[idx0]--;
-            elementBuffer[counts[idx0]] = element0;
+            const uint64_t counts0 = --counts[idx0];
+            const uint64_t counts1 = --counts[idx1];
+            const uint64_t counts2 = --counts[idx2];
+            const uint64_t counts3 = --counts[idx3];
 
-            counts[idx1]--;
-            elementBuffer[counts[idx1]] = element1;
-
-            counts[idx2]--;
-            elementBuffer[counts[idx2]] = element2;
-
-            counts[idx3]--;
-            elementBuffer[counts[idx3]] = element3;
+            elementBuffer[counts0] = element0;
+            elementBuffer[counts1] = element1;
+            elementBuffer[counts2] = element2;
+            elementBuffer[counts3] = element3;
         }
 
         for(; i > 0; i--) {
