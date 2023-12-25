@@ -15,6 +15,18 @@ struct element_t {
 
 };
 
+template <uint32_t N>
+constexpr inline uint64_t getKeyFrom(uint8_t *bytes) {
+    uint64_t key = 0;
+
+    for(uint64_t i = N; i > 0; i--) {
+        key <<= 8;
+        key |= bytes[i - 1];
+    }
+
+    return key;
+};
+
 /**
  * @brief Sorts complex objects which are convertable to some numeric key. Has complexity of
  *        O(nw), where n is size of the array and w - count of bytes in numeric key.
@@ -30,9 +42,11 @@ struct element_t {
  * @param freeKeys - if true, then all keys returned by keyFunc are freed by delete operator.
  * @return nothing, 
 */
-template <typename T, typename U>
+template <uint32_t BYTES = 1, typename T, typename U>
 void radixSort(const T* begin, const T* end, T* out, const U &keyFunc, bool freeKeys = false) {
     using algobox_p::element_t;
+
+    const uint64_t RADIX_SORT_STACK_SIZE = 1ull << (BYTES << 3ull);
 
     uint64_t arraySize = end - begin;
     uint32_t keySize = 0;
@@ -60,14 +74,14 @@ void radixSort(const T* begin, const T* end, T* out, const U &keyFunc, bool free
         element.index = i;
     }
 
-    uint64_t counts[256];
+    uint64_t counts[RADIX_SORT_STACK_SIZE];
 
     // *************************************************
     // *                    SORTING                    *
     // *************************************************
 
-    for(uint32_t key = 0; key < keySize; key++) {
-        memset(counts, 0, 256 * sizeof(uint64_t));
+    for(uint32_t key = 0; key < keySize; key += BYTES) {
+        memset(counts, 0, RADIX_SORT_STACK_SIZE * sizeof(uint64_t));
 
         // In this implementation of radix sort values are sorted ( by digits )
         // with counting digit occurrences, going through counts array and
@@ -78,10 +92,10 @@ void radixSort(const T* begin, const T* end, T* out, const U &keyFunc, bool free
         // end.
 
         for(uint64_t i = 0; i < arraySize; i++) {
-            counts[elements[i].key[key]]++;
+            counts[getKeyFrom<BYTES>(elements[i].key + key)]++;
         }
 
-        for(uint64_t i = 1; i < 256; i++) {
+        for(uint64_t i = 1; i < RADIX_SORT_STACK_SIZE; i++) {
             counts[i] += counts[i - 1];
         }
 
@@ -95,10 +109,10 @@ void radixSort(const T* begin, const T* end, T* out, const U &keyFunc, bool free
             element_t<T>& element1 = elements[i - 2];
             element_t<T>& element0 = elements[i - 1];
 
-            uint64_t idx3 = element3.key[key];
-            uint64_t idx2 = element2.key[key];
-            uint64_t idx1 = element1.key[key];
-            uint64_t idx0 = element0.key[key];
+            uint64_t idx3 = getKeyFrom<BYTES>(element3.key + key);
+            uint64_t idx2 = getKeyFrom<BYTES>(element2.key + key);
+            uint64_t idx1 = getKeyFrom<BYTES>(element1.key + key);
+            uint64_t idx0 = getKeyFrom<BYTES>(element0.key + key);
 
             // Decrement first to get indexes which start from zero
             counts[idx0]--;
@@ -115,7 +129,7 @@ void radixSort(const T* begin, const T* end, T* out, const U &keyFunc, bool free
         }
 
         for(; i > 0; i--) {
-            uint64_t idx = elements[i - 1].key[key];
+            uint64_t idx = getKeyFrom<BYTES>(elements[i - 1].key + key);
 
             // Decrement first to get indexes which start from zero
             counts[idx]--;
@@ -158,9 +172,11 @@ void radixSort(const T* begin, const T* end, T* out, const U &keyFunc, bool free
  * @param freeKeys - if true, then all keys returned by keyFunc are freed by delete operator.
  * @return nothing, 
 */
-template <typename T, typename U>
+template <uint32_t BYTES = 1, typename T, typename U>
 void radixSortInPlace(T* begin, T* end, const U& keyFunc, bool freeKeys = false) {
     using algobox_p::element_t;
+
+    const uint64_t RADIX_SORT_STACK_SIZE = 1ull << (BYTES << 3ull);
 
     uint64_t arraySize = end - begin;
     uint32_t keySize = 0;
@@ -188,14 +204,14 @@ void radixSortInPlace(T* begin, T* end, const U& keyFunc, bool freeKeys = false)
         element.index = i;
     }
 
-    uint64_t counts[0x100];
+    uint64_t counts[RADIX_SORT_STACK_SIZE];
 
     // *************************************************
     // *                    SORTING                    *
     // *************************************************
 
-    for(uint32_t key = 0; key < keySize; key++) {
-        memset(counts, 0, 0x100 * sizeof(uint64_t));
+    for(uint32_t key = 0; key < keySize; key += BYTES) {
+        memset(counts, 0, RADIX_SORT_STACK_SIZE * sizeof(uint64_t));
 
         // In this implementation of radix sort values are sorted ( by digits )
         // with counting digit occurrences, going through counts array and
@@ -206,28 +222,27 @@ void radixSortInPlace(T* begin, T* end, const U& keyFunc, bool freeKeys = false)
         // end.
 
         for(uint64_t i = 0; i < arraySize; i++) {
-            counts[elements[i].key[key]]++;
+            counts[getKeyFrom<BYTES>(elements[i].key + key)]++;
         }
 
-        if(counts[0] == arraySize)
-            break;
-
-        for(uint64_t i = 1; i < 0x100; i++) {
+        for(uint64_t i = 1; i < RADIX_SORT_STACK_SIZE; i++) {
             counts[i] += counts[i - 1];
         }
 
         uint64_t i = arraySize;
 
+        // This piece of code runs 3 times faster with that optimization, as it
+        // makes data more cacheable in cpu L#-cache
         for(; i > 4; i -= 4) {
             element_t<T>& element3 = elements[i - 4];
             element_t<T>& element2 = elements[i - 3];
             element_t<T>& element1 = elements[i - 2];
             element_t<T>& element0 = elements[i - 1];
 
-            uint64_t idx3 = element3.key[key];
-            uint64_t idx2 = element2.key[key];
-            uint64_t idx1 = element1.key[key];
-            uint64_t idx0 = element0.key[key];
+            uint64_t idx3 = getKeyFrom<BYTES>(element3.key + key);
+            uint64_t idx2 = getKeyFrom<BYTES>(element2.key + key);
+            uint64_t idx1 = getKeyFrom<BYTES>(element1.key + key);
+            uint64_t idx0 = getKeyFrom<BYTES>(element0.key + key);
 
             // Decrement first to get indexes which start from zero
             counts[idx0]--;
@@ -244,7 +259,7 @@ void radixSortInPlace(T* begin, T* end, const U& keyFunc, bool freeKeys = false)
         }
 
         for(; i > 0; i--) {
-            uint64_t idx = elements[i - 1].key[key];
+            uint64_t idx = getKeyFrom<BYTES>(elements[i - 1].key + key);
 
             // Decrement first to get indexes which start from zero
             counts[idx]--;
