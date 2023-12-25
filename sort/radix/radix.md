@@ -46,6 +46,13 @@ radixSortInPlace(testArray, testArray + size, u32toKey, false);
 // теперь testArray отсортирован
 ```
 
+Функции можно также задать сортировку не по байтам, а по 2 байтам сразу:
+```cpp
+radixSort<2>(testArray, testArray + size, outArray, u32toKey, false);
+```
+
+Однако, на маленьких значениях скорость от этого может пострадать.
+
 ### Статистика
 На `uint32_t` поразрядная сортировка показывает следующие результаты:
 | Размер массива   | radixSort | std::sort |
