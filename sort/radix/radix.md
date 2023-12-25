@@ -39,6 +39,13 @@ radixSort(testArray, testArray + size, outArray, u32toKey, false);
 // теперь outArray хранит отсортированную копию testArray
 ```
 
+Также, для сортировки массива на месте ( как у `std::sort` ) можно воспользоваться функцией `radixSortInPlace`:
+
+```cpp
+radixSortInPlace(testArray, testArray + size, u32toKey, false);
+// теперь testArray отсортирован
+```
+
 ### Статистика
 На `uint32_t` поразрядная сортировка показывает следующие результаты:
 | Размер массива   | radixSort | std::sort |

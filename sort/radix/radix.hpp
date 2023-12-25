@@ -10,7 +10,7 @@ namespace algobox_p {
 template <typename T>
 struct element_t {
     uint8_t* key;
-    T* element;
+    uint64_t index;
 };
 
 };
@@ -22,15 +22,16 @@ struct element_t {
  * @param end - pointer to the element above last
  * @param out - location of allocated data to place sorted array to. Should NOT point to the
  *              same location as `begin` points to.
- * @param keyFunc - type to numeric key converter. Accepts element and writes to outkey a
+ * @param keyFunc - `void keyFunc(T& element, void** outkey, uint32_t* keylen)` -
+ *                  type to numeric key converter. Accepts element and writes to outkey a
  *                  sequence of bytes so it becomes a n-bit key and to keylen length of that
  *                  sequence in bytes. Note that provided outkey points to a NON-ALLOCATED
  *                  data so you need to allocate it first.
  * @param freeKeys - if true, then all keys returned by keyFunc are freed by delete operator.
  * @return nothing, 
 */
-template <typename T>
-void radixSort(T* begin, T* end, T* out, const std::function<void(T& element, void** outkey, uint32_t* keylen)> &keyFunc, bool freeKeys = false) {
+template <typename T, typename U>
+void radixSort(const T* begin, const T* end, T* out, const U &keyFunc, bool freeKeys = false) {
     using algobox_p::element_t;
 
     uint64_t arraySize = end - begin;
@@ -56,7 +57,7 @@ void radixSort(T* begin, T* end, T* out, const std::function<void(T& element, vo
         keyFunc(begin[i], (void**)&element.key, &currentKeySize);
         keySize = std::max(keySize, currentKeySize);
 
-        element.element = begin + i;
+        element.index = i;
     }
 
     uint64_t counts[256];
@@ -127,7 +128,8 @@ void radixSort(T* begin, T* end, T* out, const std::function<void(T& element, vo
     }
 
     for(uint64_t i = 0; i < arraySize; i++) {
-        out[i] = *elements[i].element;
+        // Don't call copying constructor ( can speed up code for structs and classes )
+        memcpy(out + i, begin + elements[i].index, sizeof(T));
     }
 
     if(freeKeys) {
@@ -141,21 +143,23 @@ void radixSort(T* begin, T* end, T* out, const std::function<void(T& element, vo
 }
 
 /**
- * @brief Sorts complex objects which are convertable to some numeric key. Has complexity of
- *        O(nw), where n is size of the array and w - count of bytes in numeric key.
+ * @brief Sorts complex objects in place which are convertable to some numeric key. Has
+ *        complexity of O(nw), where n is size of the array and w - count of bytes in
+ *        numeric key.
  * @param begin - pointer to the array's first element
  * @param end - pointer to the element above last
  * @param out - location of allocated data to place sorted array to. Should NOT point to the
  *              same location as `begin` points to.
- * @param keyFunc - type to numeric key converter. Accepts element and writes to outkey a
+ * @param keyFunc - `void keyFunc(T& element, void** outkey, uint32_t* keylen)` -
+ *                  type to numeric key converter. Accepts element and writes to outkey a
  *                  sequence of bytes so it becomes a n-bit key and to keylen length of that
  *                  sequence in bytes. Note that provided outkey points to a NON-ALLOCATED
  *                  data so you need to allocate it first.
  * @param freeKeys - if true, then all keys returned by keyFunc are freed by delete operator.
  * @return nothing, 
 */
-template <typename T>
-void radixSort(T* begin, T* end, T* out, void (*keyFunc)(T& element, void** outkey, uint32_t* keylen), bool freeKeys = false) {
+template <typename T, typename U>
+void radixSortInPlace(T* begin, T* end, const U& keyFunc, bool freeKeys = false) {
     using algobox_p::element_t;
 
     uint64_t arraySize = end - begin;
@@ -181,7 +185,7 @@ void radixSort(T* begin, T* end, T* out, void (*keyFunc)(T& element, void** outk
         keyFunc(begin[i], (void**)&element.key, &currentKeySize);
         keySize = std::max(keySize, currentKeySize);
 
-        element.element = begin + i;
+        element.index = i;
     }
 
     uint64_t counts[0x100];
@@ -253,7 +257,30 @@ void radixSort(T* begin, T* end, T* out, void (*keyFunc)(T& element, void** outk
     }
 
     for(uint64_t i = 0; i < arraySize; i++) {
-        out[i] = *elements[i].element;
+        if(elements[i].index == (uint64_t)(-1))
+            continue;
+
+        uint64_t currentIndex = i;
+        uint64_t newIndex = elements[currentIndex].index;
+
+        T initial;
+
+        // Copying contents through memcpy sometimes faster, at least we don't
+        // call copying operator
+        memcpy(&initial, begin + currentIndex, sizeof(T));
+
+        while(newIndex != i) {
+            memcpy(begin + currentIndex, begin + newIndex, sizeof(T));
+
+            // Invalidate pointer
+            elements[currentIndex].index = (uint64_t)(-1);
+
+            currentIndex = newIndex;
+            newIndex = elements[currentIndex].index;
+        }
+        
+        elements[currentIndex].index = (uint64_t)(-1);
+        memcpy(begin + currentIndex, &initial, sizeof(T));
     }
 
     if(freeKeys) {
