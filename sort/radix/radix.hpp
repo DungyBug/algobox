@@ -43,7 +43,7 @@ constexpr inline uint64_t getKeyFrom(uint8_t *bytes) {
  * @return nothing, 
 */
 template <uint32_t BYTES = 1, typename T, typename U>
-void radixSort(const T* begin, const T* end, T* out, const U &keyFunc, bool freeKeys = false) {
+void radixSort(T* begin, T* end, T* out, const U &keyFunc, bool freeKeys = false) {
     using algobox_p::element_t;
 
     const uint64_t RADIX_SORT_STACK_SIZE = 1ull << (BYTES << 3ull);
