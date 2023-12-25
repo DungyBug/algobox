@@ -22,7 +22,8 @@ struct element_t {
  * @param end - pointer to the element above last
  * @param out - location of allocated data to place sorted array to. Should NOT point to the
  *              same location as `begin` points to.
- * @param keyFunc - type to numeric key converter. Accepts element and writes to outkey a
+ * @param keyFunc - `void keyFunc(T& element, void** outkey, uint32_t* keylen)` -
+ *                  type to numeric key converter. Accepts element and writes to outkey a
  *                  sequence of bytes so it becomes a n-bit key and to keylen length of that
  *                  sequence in bytes. Note that provided outkey points to a NON-ALLOCATED
  *                  data so you need to allocate it first.
