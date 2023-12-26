@@ -7,17 +7,21 @@
 namespace algobox_p {
 
 struct mark_t {
-    uint32_t a = 0, b = 0, index = 0;
+    union {
+        struct {
+            uint32_t b;
+            uint32_t a;
+        };
+
+        // Contains b and a in one integer. Gives big speed up when sorting
+        uint64_t ba = 0;
+    };
+    uint64_t index = 0;
 };
 
 bool operator<(const mark_t &left, const mark_t &right) {
-    return left.a < right.a || (left.a == right.a && left.b < right.b);
+    return left.ba < right.ba;
 };
-
-void keyConvert(mark_t& element, void** outkey, uint32_t* keylen) {
-    (*outkey) = &element;
-    (*keylen) = 8;
-}
 
 };
 
@@ -32,9 +36,7 @@ std::vector<uint32_t> buildSuffixArray(const std::string &str) {
     // So, marks[indices[4]] will be mark for substring [4..n]
     std::vector<uint32_t> indices(size, 0);
 
-    std::vector<mark_t> marksVector(size);
-
-    mark_t* marks = marksVector.data();
+    std::vector<mark_t> marks(size);
 
     for(uint32_t i = 0; i < size; i++) {
         marks[i].index = i;
@@ -42,18 +44,16 @@ std::vector<uint32_t> buildSuffixArray(const std::string &str) {
     }
 
     for(uint32_t k = 1; k < size; k *= 2) {
-        std::sort(marks, marks + size);
+        std::sort(marks.begin(), marks.end());
 
         uint32_t currentRank = 0;
-        uint32_t prevA = -1;
-        uint32_t prevB = -1;
+        uint64_t prevBA = -1;
 
         for(uint32_t i = 0; i < size; i++) {
             indices[marks[i].index] = i;
 
-            if(marks[i].a != prevA || marks[i].b != prevB) {
-                prevA = marks[i].a;
-                prevB = marks[i].b;
+            if(marks[i].ba != prevBA) {
+                prevBA = marks[i].ba;
                 currentRank++;
             }
 
@@ -69,7 +69,7 @@ std::vector<uint32_t> buildSuffixArray(const std::string &str) {
         }
     }
 
-    std::sort(marks, marks + size);
+    std::sort(marks.begin(), marks.end());
 
     for(uint32_t i = 0; i < size; i++) {
         indices[i] = marks[i].index;
