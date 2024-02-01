@@ -58,6 +58,14 @@ class SegmentTree {
      * It does what you think it does.
      * Has logarithmic complexity
      */
+    const T& getValue(uint32_t index) const {
+        return this->segments[index + this->size - 1];
+    }
+
+    /**
+     * It does what you think it does.
+     * Has logarithmic complexity
+     */
     void setValue(uint32_t index, T value) {
         int32_t currentIndex = index + this->size - 1;
 
