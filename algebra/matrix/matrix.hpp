@@ -4,7 +4,7 @@
 
 #include <utility>
 
-template <typename T, uint64_t w, uint64_t h = w>
+template <typename T, std::size_t w, std::size_t h = w>
 class matrix {
    private:
     T _elements[h][w];
@@ -13,16 +13,16 @@ class matrix {
     matrix() {}
 
     matrix(T initialValue) {
-        for (uint64_t j = 0; j < h; j++) {
-            for (uint64_t i = 0; i < w; i++) {
+        for (std::size_t j = 0; j < h; j++) {
+            for (std::size_t i = 0; i < w; i++) {
                 this->_elements[j][i] = initialValue;
             }
         }
     }
 
     matrix(T elements[h][w]) {
-        for (uint64_t j = 0; j < h; j++) {
-            for (uint64_t i = 0; i < w; i++) {
+        for (std::size_t j = 0; j < h; j++) {
+            for (std::size_t i = 0; i < w; i++) {
                 this->_elements[j][i] = elements[j][i];
             }
         }
@@ -31,63 +31,68 @@ class matrix {
     ~matrix() {}
 
     void fill(T initialValue) {
-        for (uint64_t j = 0; j < h; j++) {
-            for (uint64_t i = 0; i < w; i++) {
+        for (std::size_t j = 0; j < h; j++) {
+            for (std::size_t i = 0; i < w; i++) {
                 this->_elements[j][i] = initialValue;
             }
         }
     }
 
     // ********************************************
-    // * OPERATORS                                *
+    // *                OPERATORS                 *
     // ********************************************
 
     void operator+=(const matrix<T, w, h> other) {
-        for (uint64_t y = 0; y < h; y++) {
-            for (uint64_t x = 0; x < w; x++) {
+        for (std::size_t y = 0; y < h; y++) {
+            for (std::size_t x = 0; x < w; x++) {
                 this->_elements[y][x] += other._elements[y][x];
             }
         }
     }
 
     void operator-=(const matrix<T, w, h> other) {
-        for (uint64_t y = 0; y < h; y++) {
-            for (uint64_t x = 0; x < w; x++) {
+        for (std::size_t y = 0; y < h; y++) {
+            for (std::size_t x = 0; x < w; x++) {
                 this->_elements[y][x] -= other._elements[y][x];
             }
         }
     }
 
     void operator=(T elements[h][w]) {
-        for (uint64_t j = 0; j < h; j++) {
-            for (uint64_t i = 0; i < w; i++) {
+        for (std::size_t j = 0; j < h; j++) {
+            for (std::size_t i = 0; i < w; i++) {
                 this->_elements[j][i] = elements[j][i];
             }
         }
     }
 
     // ********************************************
-    // * ACCESS FUNCTIONS                         *
+    // *             ACCESS FUNCTIONS             *
     // ********************************************
 
-    T* operator[](uint64_t i) { return this->_elements[i]; }
-    const T* operator[](uint64_t i) const { return this->_elements[i]; }
+    T* operator[](std::size_t i) { return this->_elements[i]; }
+    const T* operator[](std::size_t i) const { return this->_elements[i]; }
 };
 
 // ********************************************
-// * OPERATORS                                *
+// *                OPERATORS                 *
 // ********************************************
 
-template <typename T, uint64_t w1, uint64_t h1, uint64_t w2>
+/**
+ * @attention For frequent multiplication consider using `multiplyTo` with
+ * buffer matrices as it does not create new matrix and therefore is more
+ * memory-efficient ( see matrix `binpow` implementation for usage example )
+ */
+template <typename T, std::size_t w1, std::size_t h1, std::size_t w2>
 matrix<T, w2, h1> operator*(const matrix<T, w1, h1>& left,
                             const matrix<T, w2, w1>& right) {
     matrix<T, w2, h1> out(T(0));
 
-    for (uint64_t y = 0; y < h1; y++) {
-        for (uint64_t x = 0; x < w1; x++) {
+    for (std::size_t y = 0; y < h1; y++) {
+        for (std::size_t x = 0; x < w1; x++) {
             const T el = left[y][x];
 
-            for (uint64_t i = 0; i < w2; i++) {
+            for (std::size_t i = 0; i < w2; i++) {
                 out[y][i] += el * right[x][i];
             }
         }
@@ -96,10 +101,10 @@ matrix<T, w2, h1> operator*(const matrix<T, w1, h1>& left,
     return out;
 }
 
-template <typename T, uint64_t w, uint64_t h>
+template <typename T, std::size_t w, std::size_t h>
 bool operator==(const matrix<T, w, h>& left, const matrix<T, w, h>& right) {
-    for (uint64_t y = 0; y < h; y++) {
-        for (uint64_t x = 0; x < w; x++) {
+    for (std::size_t y = 0; y < h; y++) {
+        for (std::size_t x = 0; x < w; x++) {
             if (left[y][x] != right[y][x]) return false;
         }
     }
@@ -108,31 +113,41 @@ bool operator==(const matrix<T, w, h>& left, const matrix<T, w, h>& right) {
 }
 
 // ********************************************
-// * ALGEBRA                                  *
+// *                 ALGEBRA                  *
 // ********************************************
 
-template <typename T, uint64_t s>
+/**
+ * @brief Creates identity *square* matrix
+ */
+template <typename T, std::size_t s>
 matrix<T, s> identity() {
     matrix<T, s> out(T(0));
 
-    for (uint64_t i = 0; i < s; i++) {
+    for (std::size_t i = 0; i < s; i++) {
         out[i][i] = T(1);
     }
 
     return out;
 }
 
-template <typename T, uint64_t w1, uint64_t h1, uint64_t w2>
+/**
+ * @brief Multiplies two matrices and saves the result into the third one.
+ * @attention For frequent multiplication using this function is recommended as
+ * it doesn't allocate memory and therefore is memory-efficient
+ * @param out - where to write the result
+ * @returns reference to out for convenient use ( BUT NOT a new matrix )
+ */
+template <typename T, std::size_t w1, std::size_t h1, std::size_t w2>
 matrix<T, w2, h1>& multiplyTo(const matrix<T, w1, h1>& left,
                               const matrix<T, w2, w1>& right,
                               matrix<T, w2, h1>& out) {
     out.fill(T(0));
 
-    for (uint64_t y = 0; y < h1; y++) {
-        for (uint64_t x = 0; x < w1; x++) {
+    for (std::size_t y = 0; y < h1; y++) {
+        for (std::size_t x = 0; x < w1; x++) {
             const T el = left[y][x];
 
-            for (uint64_t i = 0; i < w2; i++) {
+            for (std::size_t i = 0; i < w2; i++) {
                 out[y][i] += el * right[x][i];
             }
         }
@@ -141,7 +156,14 @@ matrix<T, w2, h1>& multiplyTo(const matrix<T, w1, h1>& left,
     return out;
 }
 
-template <typename T, typename U, uint64_t s>
+/**
+ * @brief Binary raises matrix to a power. Only square matrix can be raised to
+ * power, as only square matrix can be multiplied by self.
+ * @param x - matrix to raise to power to
+ * @param power - power, should be some of integer type
+ * @returns raised to power matrix
+ */
+template <typename T, typename U, std::size_t s>
 matrix<T, s> binpow(const matrix<T, s>& x, U power) {
     if (power == 1) {
         return x;
@@ -167,7 +189,14 @@ matrix<T, s> binpow(const matrix<T, s>& x, U power) {
     return out;
 };
 
-template <typename T, typename U, uint64_t s>
+/**
+ * @brief Mutates and binary raises matrix to a power. Only square matrix can be
+ * raised to power, as only square matrix can be multiplied by self.
+ * @param x - matrix to raise to power to ( note that the matrix is mutated! )
+ * @param power - power, should be some of integer type
+ * @note works usually slower than `binpow`
+ */
+template <typename T, typename U, std::size_t s>
 void binpowInPlace(matrix<T, s>& x, U power) {
     if (power == 1) {
         return;
