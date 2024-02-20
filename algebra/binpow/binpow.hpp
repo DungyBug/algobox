@@ -2,24 +2,27 @@
 #define BINPOW_HPP
 
 template <typename T, typename U>
-T binpow(const T& x, U power) {
+T binpow(T x, U power) {
     if (power == 1) {
         return x;
     }
 
-    power--;
+    T out = T(1);
 
-    U currentPower = 1;
-    T powered = x;
-    T out = x;
+    // Usual binpow that goes through binary represenation of power
 
     while (power > 0) {
-        if (power & 1) {
-            out *= powered;
+        // For some reason, adding an "else" branch makes this code
+        // faster, despite else branch is guaranteed to execute in the
+        // next cycle ( so, logically, we should loose cycles rather than gain
+        // them )
+        if (power % 2) {
+            out *= x;
+            power--;
+        } else {
+            x *= x;
+            power /= 2;
         }
-
-        powered *= powered;
-        power >>= 1;
     }
 
     return out;

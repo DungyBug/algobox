@@ -20,17 +20,11 @@ class matrix {
         }
     }
 
-    matrix(T elements[h][w]) {
-        for (std::size_t j = 0; j < h; j++) {
-            for (std::size_t i = 0; i < w; i++) {
-                this->_elements[j][i] = elements[j][i];
-            }
-        }
-    }
+    matrix(T elements[h][w]) { this->_elements = elements; }
 
     ~matrix() {}
 
-    void fill(T initialValue) {
+    inline void fill(T initialValue) {
         for (std::size_t j = 0; j < h; j++) {
             for (std::size_t i = 0; i < w; i++) {
                 this->_elements[j][i] = initialValue;
@@ -70,8 +64,10 @@ class matrix {
     // *             ACCESS FUNCTIONS             *
     // ********************************************
 
-    T* operator[](std::size_t i) { return this->_elements[i]; }
-    const T* operator[](std::size_t i) const { return this->_elements[i]; }
+    inline T* operator[](std::size_t i) { return this->_elements[i]; }
+    inline const T* operator[](std::size_t i) const {
+        return this->_elements[i];
+    }
 };
 
 // ********************************************
@@ -143,11 +139,11 @@ matrix<T, w2, h1>& multiplyTo(const matrix<T, w1, h1>& left,
                               matrix<T, w2, h1>& out) {
     out.fill(T(0));
 
-    for (std::size_t y = 0; y < h1; y++) {
-        for (std::size_t x = 0; x < w1; x++) {
+    for (std::size_t y = 0; y < h1; ++y) {
+        for (std::size_t x = 0; x < w1; ++x) {
             const T el = left[y][x];
 
-            for (std::size_t i = 0; i < w2; i++) {
+            for (std::size_t i = 0; i < w2; ++i) {
                 out[y][i] += el * right[x][i];
             }
         }
@@ -164,26 +160,30 @@ matrix<T, w2, h1>& multiplyTo(const matrix<T, w1, h1>& left,
  * @returns raised to power matrix
  */
 template <typename T, typename U, std::size_t s>
-matrix<T, s> binpow(const matrix<T, s>& x, U power) {
+matrix<T, s> binpow(matrix<T, s> x, U power) {
     if (power == 1) {
         return x;
     }
 
-    matrix<T, s> powered = x;
     matrix<T, s> out = identity<T, s>();
+    matrix<T, s> buff;
 
-    matrix<T, s> outBuff(T(0));
-    matrix<T, s> poweredBuff(T(0));
+    // Usual binpow that goes through binary represenation of power
 
     while (power > 0) {
-        if (power & 1) {
-            multiplyTo(out, powered, outBuff);
-            std::swap(out, outBuff);
+        // For some reason, adding an "else" branch makes this code
+        // faster, despite else branch is guaranteed to execute in the
+        // next cycle ( so, logically, we should loose cycles rather than gain
+        // them )
+        if (power % 2) {
+            multiplyTo(out, x, buff);
+            std::swap(out, buff);
+            power--;
+        } else {
+            multiplyTo(x, x, buff);
+            std::swap(x, buff);
+            power /= 2;
         }
-
-        multiplyTo(powered, powered, poweredBuff);
-        std::swap(powered, poweredBuff);
-        power >>= 1;
     }
 
     return out;
@@ -205,18 +205,16 @@ void binpowInPlace(matrix<T, s>& x, U power) {
     power--;
 
     matrix<T, s> powered = x;
-
-    matrix<T, s> outBuff(T(0));
-    matrix<T, s> poweredBuff(T(0));
+    matrix<T, s> buff(T(0));
 
     while (power > 0) {
         if (power & 1) {
-            multiplyTo(x, powered, outBuff);
-            std::swap(x, outBuff);
+            multiplyTo(x, powered, buff);
+            std::swap(x, buff);
         }
 
-        multiplyTo(powered, powered, poweredBuff);
-        std::swap(powered, poweredBuff);
+        multiplyTo(powered, powered, buff);
+        std::swap(powered, buff);
         power >>= 1;
     }
 };
