@@ -19,6 +19,8 @@ inline void merge(const T *begin1, const T *begin2, const T *end2, T *out) {
         const uint64_t left = begin1[l];
         const uint64_t right = begin2[r];
 
+        // TODO: Use previously generated keys to compare elements to get rid of
+        // operator<
         if (left < right) {
             out[i] = left;
             l++;
@@ -47,7 +49,7 @@ inline void merge(const T *begin1, const T *begin2, const T *end2, T *out) {
 
 /**
  * @brief Sorts complex objects which are convertable to some numeric key. Has
- * complexity of O(nwlogn) in worst case, where n is size of the array and w -
+ * complexity of O(nwlognw) in worst case, where n is size of the array and w -
  * count of bytes in numeric key. Average complexity is O(nw).
  * It's a radix sort with better cache utilization by using merge sort in last
  * steps.
