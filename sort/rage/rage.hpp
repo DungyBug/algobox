@@ -6,8 +6,11 @@
 #include <iostream>
 #include <stdint.h>
 
-template <typename T>
-inline void merge(const T *begin1, const T *begin2, const T *end2, T *out) {
+namespace RageSort {
+
+template <typename T, typename _Compare = std::less<T>>
+inline void merge(const T *begin1, const T *begin2, const T *end2, T *out,
+                  _Compare comp = std::less<T>()) {
     const uint64_t size1 = begin2 - begin1;
     const uint64_t size2 = end2 - begin2;
 
@@ -21,7 +24,7 @@ inline void merge(const T *begin1, const T *begin2, const T *end2, T *out) {
 
         // TODO: Use previously generated keys to compare elements to get rid of
         // operator<
-        if (left < right) {
+        if (comp(left, right)) {
             out[i] = left;
             l++;
         } else {
@@ -47,6 +50,8 @@ inline void merge(const T *begin1, const T *begin2, const T *end2, T *out) {
     }
 }
 
+} // namespace RageSort
+
 /**
  * @brief Sorts complex objects which are convertable to some numeric key. Has
  * complexity of O(nwlognw) in worst case, where n is size of the array and w -
@@ -67,9 +72,9 @@ inline void merge(const T *begin1, const T *begin2, const T *end2, T *out) {
  * @note It performs best when keys and objects are lightweight. Consider using
  * std::sort or radix sort for heavy objects.
  */
-template <typename T, typename U>
-void rageSort(T *begin, T *end, T *out, const U &keyFunc,
-              bool freeKeys = false) {
+template <typename T, typename U, typename _Compare = std::less<T>>
+void rageSort(T *begin, T *end, T *out, const U &keyFunc, bool freeKeys = false,
+              _Compare comp = std::less<T>()) {
     using algobox_p::element_t;
 
     // May vary depending on cpu cache size. Usually, value somewhere around
@@ -117,9 +122,10 @@ void rageSort(T *begin, T *end, T *out, const U &keyFunc,
 
         // Iteratively goes by group pairs and merges them. Cache friendly.
         for (; i + STEP_SIZE * k < arraySize; i += STEP_SIZE * 2 * k) {
-            merge(temp + i, temp + i + STEP_SIZE * k,
-                  std::min(temp + i + STEP_SIZE * 2 * k, temp + arraySize),
-                  sorted + i);
+            RageSort::merge(
+                temp + i, temp + i + STEP_SIZE * k,
+                std::min(temp + i + STEP_SIZE * 2 * k, temp + arraySize),
+                sorted + i, comp);
         }
 
         i -= STEP_SIZE * 2 * k;
